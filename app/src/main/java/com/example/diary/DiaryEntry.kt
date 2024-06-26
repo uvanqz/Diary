@@ -1,5 +1,6 @@
 package com.example.diary
 
+import android.net.Uri
 import java.util.*
 
 data class DiaryEntry(
@@ -7,5 +8,5 @@ data class DiaryEntry(
     val title: String,
     val description: String,
     val date: Date = Date(),
-    val photoUri: String? = null,
+    val photoUri: Uri?, // Используем Uri для хранения ссылки на фото,
 )

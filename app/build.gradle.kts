@@ -73,4 +73,5 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-crashlytics")
+    implementation("io.coil-kt:coil-compose:1.4.0")
 }

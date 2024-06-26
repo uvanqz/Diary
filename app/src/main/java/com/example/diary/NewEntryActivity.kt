@@ -1,30 +1,29 @@
 package com.example.diary
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberImagePainter
 import com.example.diary.ui.theme.DiaryTheme
 
 class NewEntryActivity : ComponentActivity() {
+    private var photoUri: MutableState<Uri?> = mutableStateOf(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -32,21 +31,37 @@ class NewEntryActivity : ComponentActivity() {
         val isDarkTheme = intent.getBooleanExtra("IS_DARK_THEME", false)
         val dynamicTheme = intent.getBooleanExtra("DYNAMIC_THEME", false)
 
+        val getContent =
+            registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+                uri?.let {
+                    photoUri.value = it
+                }
+            }
+
         setContent {
             DiaryTheme(darkTheme = isDarkTheme, dynamicColor = dynamicTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    NewEntryScreen(onSave = { title, description ->
-                        val resultIntent =
-                            Intent().apply {
-                                putExtra("TITLE", title)
-                                putExtra("DESCRIPTION", description)
-                            }
-                        setResult(RESULT_OK, resultIntent)
-                        finish()
-                    })
+                    NewEntryScreen(
+                        onSave = { title, description ->
+                            val resultIntent =
+                                Intent().apply {
+                                    putExtra("TITLE", title)
+                                    putExtra("DESCRIPTION", description)
+                                    photoUri.value?.let { uri ->
+                                        putExtra("PHOTO_URI", uri.toString()) // Передаем строку, а не Uri
+                                    }
+                                }
+                            setResult(RESULT_OK, resultIntent)
+                            finish()
+                        },
+                        onPickImage = {
+                            getContent.launch("image/*")
+                        },
+                        photoUri = photoUri.value,
+                    )
                 }
             }
         }
@@ -54,9 +69,13 @@ class NewEntryActivity : ComponentActivity() {
 }
 
 @Composable
-fun NewEntryScreen(onSave: (String, String) -> Unit) {
-    val titleState = remember { mutableStateOf("") }
-    val descriptionState = remember { mutableStateOf("") }
+fun NewEntryScreen(
+    onSave: (String, String) -> Unit,
+    onPickImage: () -> Unit,
+    photoUri: Uri?,
+) {
+    var titleState by remember { mutableStateOf("") }
+    var descriptionState by remember { mutableStateOf("") }
 
     Column(
         modifier =
@@ -66,20 +85,37 @@ fun NewEntryScreen(onSave: (String, String) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TextField(
-            value = titleState.value,
-            onValueChange = { titleState.value = it },
+            value = titleState,
+            onValueChange = { titleState = it },
             label = { Text("Заголовок") },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
-            value = descriptionState.value,
-            onValueChange = { descriptionState.value = it },
+            value = descriptionState,
+            onValueChange = { descriptionState = it },
             label = { Text("Описание") },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { onSave(titleState.value, descriptionState.value) }) {
+
+        Button(onClick = onPickImage) {
+            Text("Выбрать фото из галереи")
+        }
+
+        photoUri?.let { uri ->
+            Image(
+                painter = rememberImagePainter(uri),
+                contentDescription = "Image from $uri",
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = { onSave(titleState, descriptionState) }) {
             Text("Сохранить")
         }
     }
@@ -89,6 +125,6 @@ fun NewEntryScreen(onSave: (String, String) -> Unit) {
 @Composable
 fun NewEntryScreenPreview() {
     DiaryTheme {
-        NewEntryScreen { _, _ -> }
+        NewEntryScreen({ _, _ -> }, {}, null)
     }
 }
