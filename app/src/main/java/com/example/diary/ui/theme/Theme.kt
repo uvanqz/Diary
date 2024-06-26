@@ -17,31 +17,31 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme =
     darkColorScheme(
-        primary = Purple80,
-        secondary = PurpleGrey80,
-        tertiary = Pink80,
+        primary = DarkPrimary,
+        secondary = DarkSecondary,
+        background = DarkBackground,
+        surface = DarkSurface,
+        onPrimary = DarkOnPrimary,
+        onSecondary = DarkOnSecondary,
+        onBackground = DarkOnBackground,
+        onSurface = DarkOnSurface,
     )
 
 private val LightColorScheme =
     lightColorScheme(
-        primary = Purple40,
-        secondary = PurpleGrey40,
-        tertiary = Pink40,
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-     */
+        primary = LightPrimary,
+        secondary = LightSecondary,
+        background = LightBackground,
+        surface = LightSurface,
+        onPrimary = LightOnPrimary,
+        onSecondary = LightOnSecondary,
+        onBackground = LightOnBackground,
+        onSurface = LightOnSurface,
     )
 
 @Composable
 fun DiaryTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {

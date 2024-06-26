@@ -27,8 +27,13 @@ import com.example.diary.ui.theme.DiaryTheme
 class NewEntryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Retrieve theme state from intent extras
+        val isDarkTheme = intent.getBooleanExtra("IS_DARK_THEME", false)
+        val dynamicTheme = intent.getBooleanExtra("DYNAMIC_THEME", false)
+
         setContent {
-            DiaryTheme {
+            DiaryTheme(darkTheme = isDarkTheme, dynamicColor = dynamicTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
