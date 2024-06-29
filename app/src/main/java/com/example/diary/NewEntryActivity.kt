@@ -16,6 +16,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
@@ -27,9 +28,7 @@ class NewEntryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Retrieve theme state from intent extras
         val isDarkTheme = intent.getBooleanExtra("IS_DARK_THEME", false)
-        val dynamicTheme = intent.getBooleanExtra("DYNAMIC_THEME", false)
 
         val getContent =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -39,7 +38,7 @@ class NewEntryActivity : ComponentActivity() {
             }
 
         setContent {
-            DiaryTheme(darkTheme = isDarkTheme, dynamicColor = dynamicTheme) {
+            DiaryTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
@@ -51,7 +50,7 @@ class NewEntryActivity : ComponentActivity() {
                                     putExtra("TITLE", title)
                                     putExtra("DESCRIPTION", description)
                                     photoUri.value?.let { uri ->
-                                        putExtra("PHOTO_URI", uri.toString()) // Передаем строку, а не Uri
+                                        putExtra("PHOTO_URI", uri.toString())
                                     }
                                 }
                             setResult(RESULT_OK, resultIntent)
@@ -87,20 +86,20 @@ fun NewEntryScreen(
         TextField(
             value = titleState,
             onValueChange = { titleState = it },
-            label = { Text("Заголовок") },
+            label = { Text(stringResource(id = R.string.title)) },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
         TextField(
             value = descriptionState,
             onValueChange = { descriptionState = it },
-            label = { Text("Описание") },
+            label = { Text(stringResource(id = R.string.description)) },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onPickImage) {
-            Text("Выбрать фото из галереи")
+            Text(stringResource(id = R.string.pick_image))
         }
 
         photoUri?.let { uri ->
@@ -116,7 +115,7 @@ fun NewEntryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = { onSave(titleState, descriptionState) }) {
-            Text("Сохранить")
+            Text(stringResource(id = R.string.save))
         }
     }
 }

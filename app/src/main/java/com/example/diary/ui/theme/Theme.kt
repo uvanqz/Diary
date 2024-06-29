@@ -47,11 +47,12 @@ fun DiaryTheme(
 ) {
     val colorScheme =
         when {
+            // Проверка на поддержку динамических цветов (Android 12 и выше)
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
-
+            // Использование статических цветовых схем, если динамические цвета недоступны
             darkTheme -> DarkColorScheme
             else -> LightColorScheme
         }
