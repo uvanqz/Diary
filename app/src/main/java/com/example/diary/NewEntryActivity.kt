@@ -156,7 +156,9 @@ class NewEntryActivity : ComponentActivity() {
 
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val quality = 100
+        val format = Bitmap.CompressFormat.PNG
+        bitmap.compress(format, quality, stream)
         return stream.toByteArray()
     }
 }
