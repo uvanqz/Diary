@@ -156,9 +156,12 @@ class NewEntryActivity : ComponentActivity() {
 
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
         val stream = ByteArrayOutputStream()
-        val quality = 100
         val format = Bitmap.CompressFormat.PNG
-        bitmap.compress(format, quality, stream)
+        bitmap.compress(format, DEFAULT_COMPRESS_QUALITY, stream)
         return stream.toByteArray()
+    }
+
+    companion object {
+        private const val DEFAULT_COMPRESS_QUALITY = 100
     }
 }
