@@ -55,7 +55,7 @@ class NewEntryActivity : ComponentActivity() {
                                 DiaryEntry(
                                     title = title,
                                     description = description,
-                                    photoUri = photoUri.toString(), // Преобразование Uri в строку
+                                    photoUri = photoUri, // Сохраняем URI как Uri
                                 )
                             saveEntryToDatabase(entry)
                         },
