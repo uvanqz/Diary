@@ -1,6 +1,5 @@
 package com.example.diary
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,27 +16,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import coil.compose.rememberImagePainter
 import com.example.diary.ui.theme.DiaryTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NewEntryActivity : ComponentActivity() {
-    private var photoUri: MutableState<Uri?> = mutableStateOf(null)
+    private lateinit var db: DiaryDatabase
+    private lateinit var diaryEntryDao: DiaryEntryDao
+    private var photoUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val isDarkTheme = intent.getBooleanExtra("IS_DARK_THEME", false)
-
-        val getContent =
-            registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-                uri?.let {
-                    photoUri.value = it
-                }
-            }
+        db =
+            Room.databaseBuilder(
+                applicationContext,
+                DiaryDatabase::class.java,
+                "diary_database",
+            ).build()
+        diaryEntryDao = db.diaryEntryDao()
 
         setContent {
+            val isDarkTheme = intent.getBooleanExtra("IS_DARK_THEME", false)
+
             DiaryTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -45,85 +51,93 @@ class NewEntryActivity : ComponentActivity() {
                 ) {
                     NewEntryScreen(
                         onSave = { title, description ->
-                            val resultIntent =
-                                Intent().apply {
-                                    putExtra("TITLE", title)
-                                    putExtra("DESCRIPTION", description)
-                                    photoUri.value?.let { uri ->
-                                        putExtra("PHOTO_URI", uri.toString())
-                                    }
-                                }
-                            setResult(RESULT_OK, resultIntent)
-                            finish()
+                            val entry =
+                                DiaryEntry(
+                                    title = title,
+                                    description = description,
+                                    photoUri = photoUri.toString(), // Преобразование Uri в строку
+                                )
+                            saveEntryToDatabase(entry)
                         },
                         onPickImage = {
+                            // Запуск активити выбора изображения
                             getContent.launch("image/*")
                         },
-                        photoUri = photoUri.value,
+                        photoUri = photoUri,
                     )
                 }
             }
         }
     }
-}
 
-@Composable
-fun NewEntryScreen(
-    onSave: (String, String) -> Unit,
-    onPickImage: () -> Unit,
-    photoUri: Uri?,
-) {
-    var titleState by remember { mutableStateOf("") }
-    var descriptionState by remember { mutableStateOf("") }
-
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    @Composable
+    fun NewEntryScreen(
+        onSave: (String, String) -> Unit,
+        onPickImage: () -> Unit,
+        photoUri: Uri?,
     ) {
-        TextField(
-            value = titleState,
-            onValueChange = { titleState = it },
-            label = { Text(stringResource(id = R.string.title)) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        TextField(
-            value = descriptionState,
-            onValueChange = { descriptionState = it },
-            label = { Text(stringResource(id = R.string.description)) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        var titleState by remember { mutableStateOf("") }
+        var descriptionState by remember { mutableStateOf("") }
 
-        Button(onClick = onPickImage) {
-            Text(stringResource(id = R.string.pick_image))
-        }
-
-        photoUri?.let { uri ->
-            Image(
-                painter = rememberImagePainter(uri),
-                contentDescription = "Image from $uri",
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            TextField(
+                value = titleState,
+                onValueChange = { titleState = it },
+                label = { Text(stringResource(id = R.string.title)) },
+                modifier = Modifier.fillMaxWidth(),
             )
-        }
+            Spacer(modifier = Modifier.height(16.dp))
+            TextField(
+                value = descriptionState,
+                onValueChange = { descriptionState = it },
+                label = { Text(stringResource(id = R.string.description)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { onSave(titleState, descriptionState) }) {
-            Text(stringResource(id = R.string.save))
+            Button(onClick = onPickImage) {
+                Text(stringResource(id = R.string.pick_image))
+            }
+
+            photoUri?.let { uri ->
+                Image(
+                    painter = rememberImagePainter(uri),
+                    contentDescription = "Image from $uri",
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { onSave(titleState, descriptionState) }) {
+                Text(stringResource(id = R.string.save))
+            }
         }
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun NewEntryScreenPreview() {
-    DiaryTheme {
-        NewEntryScreen({ _, _ -> }, {}, null)
+    private val getContent =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                photoUri = it
+            }
+        }
+
+    private fun saveEntryToDatabase(entry: DiaryEntry) {
+        // Сохранение записи в базу данных Room асинхронно
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                diaryEntryDao.insert(entry)
+            }
+            setResult(RESULT_OK)
+            finish()
+        }
     }
 }

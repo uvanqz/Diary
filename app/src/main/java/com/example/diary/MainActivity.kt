@@ -1,7 +1,6 @@
 package com.example.diary
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,54 +16,80 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import coil.compose.rememberImagePainter
 import com.example.diary.ui.theme.DiaryTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     private val diaryEntries = mutableStateListOf<DiaryEntry>()
+    private lateinit var db: DiaryDatabase
+    private lateinit var diaryEntryDao: DiaryEntryDao
 
     private val newEntryLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
-                val title = result.data?.getStringExtra("TITLE").orEmpty()
-                val description = result.data?.getStringExtra("DESCRIPTION").orEmpty()
-                val photoUri = result.data?.getStringExtra("PHOTO_URI")
-
-                if (title.isNotEmpty() && description.isNotEmpty() && photoUri != null) {
-                    diaryEntries.add(DiaryEntry(title = title, description = description, photoUri = Uri.parse(photoUri)))
-                }
+                loadEntries()
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        db =
+            Room.databaseBuilder(
+                applicationContext,
+                DiaryDatabase::class.java,
+                "diary_database",
+            ).build()
+        diaryEntryDao = db.diaryEntryDao()
+
         setContent {
             var isDarkTheme by remember { mutableStateOf(false) }
+            var dynamicTheme by remember { mutableStateOf(false) }
 
-            DiaryTheme(darkTheme = isDarkTheme) {
+            DiaryTheme(darkTheme = isDarkTheme, dynamicColor = dynamicTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     DiaryApp(
-                        diaryEntries,
-                        isDarkTheme,
-                        onNewEntryClick = { navigateToNewEntry(isDarkTheme) },
+                        entries = diaryEntries,
+                        isDarkTheme = isDarkTheme,
+                        dynamicTheme = dynamicTheme,
+                        onNewEntryClick = { navigateToNewEntry(isDarkTheme, dynamicTheme) },
                         onThemeToggleClick = { isDarkTheme = !isDarkTheme },
+                        onDynamicThemeToggleClick = { dynamicTheme = !dynamicTheme },
                     )
                 }
             }
         }
+
+        loadEntries()
     }
 
-    private fun navigateToNewEntry(isDarkTheme: Boolean) {
+    private fun loadEntries() {
+        lifecycleScope.launch {
+            val entries = withContext(Dispatchers.IO) { diaryEntryDao.getAllEntries() }
+            diaryEntries.clear()
+            diaryEntries.addAll(entries)
+        }
+    }
+
+    private fun navigateToNewEntry(
+        isDarkTheme: Boolean,
+        dynamicTheme: Boolean,
+    ) {
         val intent = Intent(this, NewEntryActivity::class.java)
         intent.putExtra("IS_DARK_THEME", isDarkTheme)
+        intent.putExtra("DYNAMIC_THEME", dynamicTheme)
         newEntryLauncher.launch(intent)
     }
 }
@@ -73,8 +98,10 @@ class MainActivity : ComponentActivity() {
 fun DiaryApp(
     entries: List<DiaryEntry>,
     isDarkTheme: Boolean,
+    dynamicTheme: Boolean,
     onNewEntryClick: () -> Unit,
     onThemeToggleClick: () -> Unit,
+    onDynamicThemeToggleClick: () -> Unit,
 ) {
     Column(
         modifier =
@@ -87,11 +114,15 @@ fun DiaryApp(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Button(onClick = onNewEntryClick) {
-                Text(stringResource(id = R.string.create_new_entry))
+                Text("Создать новую запись")
             }
             Button(onClick = onThemeToggleClick) {
-                Text(if (isDarkTheme) stringResource(id = R.string.light_theme) else stringResource(id = R.string.dark_theme))
+                Text(if (isDarkTheme) "Светлая тема" else "Темная тема")
             }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onDynamicThemeToggleClick) {
+            Text(if (dynamicTheme) "Отключить динамическую тему" else "Включить динамическую тему")
         }
         Spacer(modifier = Modifier.height(16.dp))
         DiaryList(entries)
@@ -112,22 +143,22 @@ fun DiaryList(entries: List<DiaryEntry>) {
 fun DiaryEntryItem(entry: DiaryEntry) {
     Column(modifier = Modifier.padding(8.dp)) {
         Text(text = entry.title, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp)) // Отступ между заголовком и описанием
         Text(text = entry.description, style = MaterialTheme.typography.bodyMedium)
-        entry.photoUri?.let { uri ->
-            Spacer(modifier = Modifier.height(8.dp))
+        entry.photoUri.let { uri ->
+            Spacer(modifier = Modifier.height(8.dp)) // Отступ перед изображением
             Image(
                 painter = rememberImagePainter(uri),
                 contentDescription = "Photo",
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(200.dp) // Фиксированная высота изображения
                         .padding(vertical = 8.dp),
                 contentScale = ContentScale.Crop,
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp)) // Отступ после изображения
         Text(
             text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(entry.date),
             style = MaterialTheme.typography.bodySmall,
@@ -142,8 +173,10 @@ fun DiaryAppPreview() {
         DiaryApp(
             entries = emptyList(),
             isDarkTheme = false,
+            dynamicTheme = false,
             onNewEntryClick = {},
             onThemeToggleClick = {},
+            onDynamicThemeToggleClick = {},
         )
     }
 }

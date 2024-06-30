@@ -1,12 +1,14 @@
 package com.example.diary
 
-import android.net.Uri
-import java.util.*
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.util.Date
 
+@Entity(tableName = "diary_entries")
 data class DiaryEntry(
-    val id: UUID = UUID.randomUUID(),
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
     val description: String,
+    val photoUri: String, // Используйте Uri для хранения
     val date: Date = Date(),
-    val photoUri: Uri?, // Используем Uri для хранения ссылки на фото,
 )
