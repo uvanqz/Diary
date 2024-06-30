@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Diary</string>
+    <string name="create_new_entry">Create New Entry</string>
+    <string name="light_theme">Light Theme</string>
+    <string name="dark_theme">Dark Theme</string>
+    <string name="title">Title</string>
+    <string name="description">Description</string>
+    <string name="pick_image">Pick Image from Gallery</string>
+    <string name="save">Save</string>
 </resources>
