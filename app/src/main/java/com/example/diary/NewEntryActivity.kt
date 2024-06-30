@@ -1,5 +1,7 @@
 package com.example.diary
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,20 +17,22 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
-import coil.compose.rememberImagePainter
 import com.example.diary.ui.theme.DiaryTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 
 class NewEntryActivity : ComponentActivity() {
     private lateinit var db: DiaryDatabase
     private lateinit var diaryEntryDao: DiaryEntryDao
-    private var photoUri: Uri? = null
+    private var photoBitmap: Bitmap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,15 +59,14 @@ class NewEntryActivity : ComponentActivity() {
                                 DiaryEntry(
                                     title = title,
                                     description = description,
-                                    photoUri = photoUri, // Сохраняем URI как Uri
+                                    photo = photoBitmap?.let { bitmapToByteArray(it) },
                                 )
                             saveEntryToDatabase(entry)
                         },
                         onPickImage = {
-                            // Запуск активити выбора изображения
                             getContent.launch("image/*")
                         },
-                        photoUri = photoUri,
+                        photoBitmap = photoBitmap,
                     )
                 }
             }
@@ -74,7 +77,7 @@ class NewEntryActivity : ComponentActivity() {
     fun NewEntryScreen(
         onSave: (String, String) -> Unit,
         onPickImage: () -> Unit,
-        photoUri: Uri?,
+        photoBitmap: Bitmap?,
     ) {
         var titleState by remember { mutableStateOf("") }
         var descriptionState by remember { mutableStateOf("") }
@@ -101,21 +104,22 @@ class NewEntryActivity : ComponentActivity() {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(onClick = onPickImage) {
-                Text(stringResource(id = R.string.pick_image))
-            }
-
-            photoUri?.let { uri ->
+            photoBitmap?.let {
                 Image(
-                    painter = rememberImagePainter(uri),
-                    contentDescription = "Image from $uri",
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = null,
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .height(200.dp)
+                            .padding(vertical = 8.dp),
+                    contentScale = ContentScale.Crop,
                 )
             }
 
+            Button(onClick = onPickImage) {
+                Text(stringResource(id = R.string.pick_image))
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = { onSave(titleState, descriptionState) }) {
                 Text(stringResource(id = R.string.save))
@@ -126,12 +130,12 @@ class NewEntryActivity : ComponentActivity() {
     private val getContent =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             uri?.let {
-                photoUri = it
+                val inputStream = contentResolver.openInputStream(it)
+                photoBitmap = BitmapFactory.decodeStream(inputStream)
             }
         }
 
     private fun saveEntryToDatabase(entry: DiaryEntry) {
-        // Сохранение записи в базу данных Room асинхронно
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 diaryEntryDao.insert(entry)
@@ -139,5 +143,11 @@ class NewEntryActivity : ComponentActivity() {
             setResult(RESULT_OK)
             finish()
         }
+    }
+
+    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        return stream.toByteArray()
     }
 }

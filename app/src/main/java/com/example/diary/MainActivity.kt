@@ -1,6 +1,7 @@
 package com.example.diary
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,12 +16,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
-import coil.compose.rememberImagePainter
 import com.example.diary.ui.theme.DiaryTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 DiaryDatabase::class.java,
                 "diary_database",
             )
-                .fallbackToDestructiveMigration() // Уничтожает и пересоздает базу данных при изменении версии
+                .fallbackToDestructiveMigration()
                 .build()
         diaryEntryDao = db.diaryEntryDao()
 
@@ -107,10 +109,10 @@ fun DiaryApp(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Button(onClick = onNewEntryClick) {
-                Text("Создать новую запись")
+                Text(stringResource(R.string.create_new_entry))
             }
             Button(onClick = onThemeToggleClick) {
-                Text(if (isDarkTheme) "Светлая тема" else "Темная тема")
+                Text(if (isDarkTheme) stringResource(R.string.light_theme) else stringResource(R.string.dark_theme))
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -132,25 +134,25 @@ fun DiaryList(entries: List<DiaryEntry>) {
 fun DiaryEntryItem(entry: DiaryEntry) {
     Column(modifier = Modifier.padding(8.dp)) {
         Text(text = entry.title, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp)) // Отступ между заголовком и описанием
+        Spacer(modifier = Modifier.height(8.dp))
         Text(text = entry.description, style = MaterialTheme.typography.bodyMedium)
 
-        // Проверяем, что photoUri не null и передаем его в rememberImagePainter
-        entry.photoUri?.let { uri ->
-            Spacer(modifier = Modifier.height(8.dp)) // Отступ перед изображением
+        entry.photo?.let { photo ->
+            val bitmap = BitmapFactory.decodeByteArray(photo, 0, photo.size)
+            Spacer(modifier = Modifier.height(8.dp))
             Image(
-                painter = rememberImagePainter(uri),
-                contentDescription = "Photo",
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(200.dp) // Фиксированная высота изображения
+                        .height(200.dp)
                         .padding(vertical = 8.dp),
                 contentScale = ContentScale.Crop,
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp)) // Отступ после изображения
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(entry.date),
             style = MaterialTheme.typography.bodySmall,
