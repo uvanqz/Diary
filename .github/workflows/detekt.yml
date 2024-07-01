@@ -16,4 +16,4 @@ jobs:
       - name: Run Coverage
         run: |
           chmod +x gradlew
-           ./gradlew detekt --config detekt.yml
+          ./gradlew detekt --config=./detekt.yml
