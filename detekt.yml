@@ -1,3 +1,22 @@
+build:
+  maxIssues: 0
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+
+config:
+  validation: true
+
+processors:
+  active: true
+  exclude:
+    - 'FunctionNaming'
+    - 'LongParameterList'
+
+console-reports:
+  active: true
+
 FunctionNaming:
   active: true
   functionPattern: '^[A-Z][A-Za-z0-9]*$'
