@@ -18,6 +18,18 @@
 - **Firebase:** Firestore, Crashlytics
 - **CI/CD:** GitHub Actions
 
+## Скриншоты основных функций приложения
+
+### 1. Основной экран со списком записей
+![Скриншот 1](images/screenshot1.png)
+
+### 2. Добавление новой записи
+![Скриншот 2](images/screenshot2.png)
+
+### 3. Тёмная тема
+![Скриншот 3](images/screenshot3.png)
+
+
 ## Запуск проекта
 
 ### Шаги для запуска
