@@ -1,0 +1,3 @@
+FunctionNaming:
+  active: true
+  functionPattern: '^[A-Z][A-Za-z0-9]*$'
