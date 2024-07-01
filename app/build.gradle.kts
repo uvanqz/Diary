@@ -55,6 +55,10 @@ android {
     }
 }
 
+detekt {
+    config = files("detekt.yml")
+}
+
 buildscript {
     extra.apply {
         set("room_version", "2.6.0")
