@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="light_theme">Светлая тема</string>
-    <string name="dark_theme">Темная  тема</string>
+    <string name="dark_theme">Темная тема</string>
     <string name="title">Заголовок</string>
     <string name="description">Описание</string>
     <string name="pick_image">Выбрать фото из галереи</string>
