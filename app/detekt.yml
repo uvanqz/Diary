@@ -17,6 +17,7 @@ processors:
 console-reports:
   active: true
 
-FunctionNaming:
-  active: true
-  functionPattern: '^[A-Z][A-Za-z0-9]*$'
+style:
+  FunctionNaming:
+    active: true
+    functionPattern: '^[A-Z][A-Za-z0-9]*$'
